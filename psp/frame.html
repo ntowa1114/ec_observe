@@ -1,0 +1,57 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>psp frame</title>
+<link rel="stylesheet" href="/style.css">
+
+<p class="origin">PSP iframe 127.0.0.1:8081</p>
+
+<form id="payment-form" method="POST" action="/charge" autocomplete="off">
+  <label for="cardnumber">カード番号</label>
+  <input type="text" id="cardnumber" name="cardnumber" inputmode="numeric" autocomplete="off" required>
+
+  <label for="exp">有効期限(MM/YY)</label>
+  <input type="text" id="exp" name="exp" placeholder="12/30" autocomplete="off" required>
+
+  <label for="cvc">セキュリティコード</label>
+  <input type="text" id="cvc" name="cvc" inputmode="numeric" autocomplete="off" required>
+
+  <input type="hidden" id="order" name="order">
+
+  <button type="submit" id="pay-button">支払う</button>
+</form>
+<p id="payment-status"></p>
+
+<script>
+    const MERCHANT_ORIGIN = 'http://localhost:8080';
+    const CHARGE_URL = '/charge';
+    const ORDER_ID = new URLSearchParams(location.search).get('order');
+
+    document.getElementById('order').value = ORDER_ID;
+
+    //フォームの入力内容を送信用の形式にまとめる
+    function collectCardData(){
+        return new URLSearchParams(new FormData(document.getElementById('payment-form')));
+    }
+
+    //結果を親(加盟店ページ)へ通知する。トークンのみでカード情報は渡さない
+    function onPaymentResult(result){
+        parent.postMessage({ type: 'psp-payment-result', result: result }, MERCHANT_ORIGIN);
+    }
+
+    async function submitPayment(event){
+        event.preventDefault();
+        const response = await fetch(CHARGE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: collectCardData().toString(),
+        });
+        const result = await response.json();
+        if(result.status !== 'ok'){
+            document.getElementById('payment-status').textContent = result.error;
+            return;
+        }
+        onPaymentResult(result);
+    }
+
+    document.getElementById('payment-form').addEventListener('submit', submitPayment);
+</script>

@@ -1,0 +1,63 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>merchant - API型</title>
+<link rel="stylesheet" href="/style.css">
+
+<h1>お支払い(API型)</h1>
+<p class="origin">加盟店ページ localhost:8080</p>
+
+<div class="summary">
+  <p>注文ID: <span id="order-label"></span></p>
+  <p>商品: テスト商品 / 金額: 1,000円</p>
+</div>
+
+<!--カード情報は加盟店サーバーへ送る。加盟店サーバーがPSPへ転送する-->
+<form id="payment-form" method="POST" action="/pay" autocomplete="off">
+  <label for="cardnumber">カード番号</label>
+  <input type="text" id="cardnumber" name="cardnumber" inputmode="numeric" autocomplete="off" required>
+
+  <label for="exp">有効期限(MM/YY)</label>
+  <input type="text" id="exp" name="exp" placeholder="12/30" autocomplete="off" required>
+
+  <label for="cvc">セキュリティコード</label>
+  <input type="text" id="cvc" name="cvc" inputmode="numeric" autocomplete="off" required>
+
+  <input type="hidden" id="order" name="order">
+
+  <button type="submit" id="pay-button">支払う</button>
+</form>
+<p id="payment-status"></p>
+
+<script>
+    const CHARGE_URL = '/pay';
+    const ORDER_ID = new URLSearchParams(location.search).get('order');
+
+    document.getElementById('order-label').textContent = ORDER_ID;
+    document.getElementById('order').value = ORDER_ID;
+
+    //フォームの入力内容を送信用の形式にまとめる
+    function collectCardData(){
+        return new URLSearchParams(new FormData(document.getElementById('payment-form')));
+    }
+
+    function onPaymentResult(result){
+        location.href = '/done?' + new URLSearchParams({ order: result.order, status: result.status, token: result.token });
+    }
+
+    async function submitPayment(event){
+        event.preventDefault();
+        const response = await fetch(CHARGE_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: collectCardData().toString(),
+        });
+        const result = await response.json();
+        if(result.status !== 'ok'){
+            document.getElementById('payment-status').textContent = result.error;
+            return;
+        }
+        onPaymentResult(result);
+    }
+
+    document.getElementById('payment-form').addEventListener('submit', submitPayment);
+</script>

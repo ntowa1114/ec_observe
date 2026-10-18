@@ -1,0 +1,26 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>merchant - 注文結果</title>
+<link rel="stylesheet" href="/style.css">
+
+<h1 id="result-title"></h1>
+<p class="origin">加盟店ページ localhost:8080</p>
+
+<div class="summary">
+  <p>注文ID: <span id="order-label"></span></p>
+  <p>トークン: <span id="token-label"></span></p>
+  <p id="payment-status"></p>
+</div>
+
+<p><a href="/">ショップへ戻る</a></p>
+
+<script>
+    const QUERY = new URLSearchParams(location.search);
+    const ORDER_ID = QUERY.get('order');
+
+    document.getElementById('result-title').textContent =
+        QUERY.get('status') === 'ok' ? 'お支払いが完了しました' : 'お支払いに失敗しました';
+    document.getElementById('order-label').textContent = ORDER_ID;
+    document.getElementById('token-label').textContent = QUERY.get('token') || '-';
+    document.getElementById('payment-status').textContent = QUERY.get('error') || '';
+</script>

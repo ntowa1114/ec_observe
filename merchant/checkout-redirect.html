@@ -1,0 +1,25 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>merchant - URLリダイレクト型</title>
+<link rel="stylesheet" href="/style.css">
+
+<h1>お支払い(URLリダイレクト型)</h1>
+<p class="origin">加盟店ページ localhost:8080</p>
+
+<div class="summary">
+  <p>注文ID: <span id="order-label"></span></p>
+  <p>商品: テスト商品 / 金額: 1,000円</p>
+</div>
+
+<!--カード情報の入力欄は加盟店側にはない。PSPの決済ページへ移動する-->
+<form id="redirect-form" method="POST" action="/checkout/redirect">
+  <input type="hidden" id="order" name="order">
+  <button type="submit">決済ページへ進む</button>
+</form>
+
+<script>
+    const ORDER_ID = new URLSearchParams(location.search).get('order');
+
+    document.getElementById('order-label').textContent = ORDER_ID;
+    document.getElementById('order').value = ORDER_ID;
+</script>

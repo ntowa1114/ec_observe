@@ -1,0 +1,34 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>merchant - JavaScriptフォーム型</title>
+<link rel="stylesheet" href="/style.css">
+
+<h1>お支払い(JavaScriptフォーム型)</h1>
+<p class="origin">加盟店ページ localhost:8080</p>
+
+<div class="summary">
+  <p>注文ID: <span id="order-label"></span></p>
+  <p>商品: テスト商品 / 金額: 1,000円</p>
+</div>
+
+<!--PSPのスクリプトが、この中に決済フォームを組み立てる-->
+<div id="card-container"></div>
+
+<script src="http://127.0.0.1:8081/psp.js"></script>
+<script>
+    const ORDER_ID = new URLSearchParams(location.search).get('order');
+
+    document.getElementById('order-label').textContent = ORDER_ID;
+
+    //PSPから受け取ったトークンを加盟店サーバーへ渡して完了ページへ進む
+    async function onPaymentResult(result){
+        await fetch('/confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: result.order, token: result.token }),
+        });
+        location.href = '/done?' + new URLSearchParams({ order: result.order, status: result.status, token: result.token });
+    }
+
+    PSP.mount('#card-container', { order: ORDER_ID, onPaymentResult: onPaymentResult });
+</script>

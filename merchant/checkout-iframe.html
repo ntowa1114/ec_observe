@@ -1,0 +1,41 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>merchant - iFrame型</title>
+<link rel="stylesheet" href="/style.css">
+
+<h1>お支払い(iFrame型)</h1>
+<p class="origin">加盟店ページ localhost:8080</p>
+
+<div class="summary">
+  <p>注文ID: <span id="order-label"></span></p>
+  <p>商品: テスト商品 / 金額: 1,000円</p>
+</div>
+
+<!--カード情報の入力欄はPSPのiframeの中にある-->
+<iframe id="psp-frame" title="PSP決済フォーム"></iframe>
+<p id="payment-status"></p>
+
+<script>
+    const PSP_ORIGIN = 'http://127.0.0.1:8081';
+    const ORDER_ID = new URLSearchParams(location.search).get('order');
+
+    document.getElementById('order-label').textContent = ORDER_ID;
+    document.getElementById('psp-frame').src = PSP_ORIGIN + '/frame?order=' + encodeURIComponent(ORDER_ID);
+
+    //PSPから受け取ったトークンを加盟店サーバーへ渡して完了ページへ進む
+    async function onPaymentResult(result){
+        await fetch('/confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order: result.order, token: result.token }),
+        });
+        location.href = '/done?' + new URLSearchParams({ order: result.order, status: result.status, token: result.token });
+    }
+
+    //iframeからの結果通知(トークンのみ。カード情報は含まれない)
+    window.addEventListener('message', (event) => {
+        if(event.origin !== PSP_ORIGIN) return;
+        if(!event.data || event.data.type !== 'psp-payment-result') return;
+        onPaymentResult(event.data.result);
+    });
+</script>
